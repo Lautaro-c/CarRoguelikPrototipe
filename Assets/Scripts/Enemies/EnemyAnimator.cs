@@ -4,16 +4,20 @@ using UnityEngine;
 
 public class EnemyAnimator : MonoBehaviour
 {
+    [SerializeField] private float deathTime = 1f;
     private Animator animator;
+
 
     private void Start()
     {
         animator = GetComponent<Animator>();
+        CancelInvoke("Destroy");
     }
 
     public void PlayDeathAnamiation()
     {
         animator.SetBool("IsDead", true);
+        Invoke("Destroy", deathTime);
     }
 
     public void PlayWalkingAnamiation()
@@ -35,5 +39,10 @@ public class EnemyAnimator : MonoBehaviour
         animator.SetBool("IsWalking", false);
         animator.SetBool("IsShooting", true);
         animator.SetBool("IsRunning", false);
+    }
+
+    private void Destroy()
+    {
+        Destroy(this.gameObject);
     }
 }

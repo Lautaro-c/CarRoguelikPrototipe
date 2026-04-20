@@ -10,7 +10,6 @@ public class ProjectilePool : MonoBehaviour
 
     private void Awake()
     {
-        // Crear proyectiles desactivados al inicio
         for (int i = 0; i < poolSize; i++)
         {
             GameObject proj = Instantiate(projectilePrefab);
@@ -33,7 +32,6 @@ public class ProjectilePool : MonoBehaviour
         }
         else
         {
-            // Si se acaba el pool, instanciamos uno nuevo
             GameObject proj = Instantiate(projectilePrefab, position, rotation);
             return proj;
         }

@@ -100,12 +100,10 @@ public class EnemyController : MonoBehaviour
                 if (!canCrash)
                 {
                     this.mode = Mode.AfterAttack;
-                    Debug.Log("Attack cooldown");
                     timeSinceLastAttack = 0;
                 }
                 break;
             case Mode.AfterAttack:
-                Debug.Log("AfterAttack");
                 break;
             case Mode.Flee:
                 dir = SteeringBehaviour.Flee(this.transform, player.position);
