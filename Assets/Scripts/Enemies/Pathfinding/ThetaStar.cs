@@ -12,8 +12,7 @@ public class ThetaStar : MonoBehaviour
         Func<Node, Node, float> getCosts,
         Func<Node, float> heuristic,
         Func<Node, Node, bool> hasLineOfSight,
-        int watchDog = 1000
-    )
+        int watchDog = 1000)
     {
         PriorityQueue<Node> pending = new PriorityQueue<Node>();
         HashSet<Node> visited = new HashSet<Node>();
