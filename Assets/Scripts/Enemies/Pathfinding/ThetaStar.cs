@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using UnityEditor.Experimental.GraphView;
-using UnityEngine;
 
-public class ThetaStar : MonoBehaviour
+public static class ThetaStar
 {
     public static List<Node> Run(
         Node initialNode,
@@ -14,24 +12,36 @@ public class ThetaStar : MonoBehaviour
         Func<Node, Node, bool> hasLineOfSight,
         int watchDog = 1000)
     {
+        List<Node> emptyPath = new List<Node>();
+
+        if (initialNode == null)
+        {
+            return emptyPath;
+        }
+
         PriorityQueue<Node> pending = new PriorityQueue<Node>();
         HashSet<Node> visited = new HashSet<Node>();
         Dictionary<Node, Node> parents = new Dictionary<Node, Node>();
         Dictionary<Node, float> costs = new Dictionary<Node, float>();
 
-        costs[initialNode] = 0;
+        costs[initialNode] = 0f;
         parents[initialNode] = initialNode;
 
-        pending.Enqueue(initialNode, 0);
+        pending.Enqueue(initialNode, 0f);
 
-        //int counter = 0;
+        int counter = 0;
 
         while (!pending.IsEmpty)
         {
-            //counter++;
-            //if (counter > watchDog) break;
+            counter++;
+
+            if (counter > watchDog)
+            {
+                break;
+            }
 
             Node node = pending.Dequeue();
+
             if (visited.Contains(node))
             {
                 continue;
@@ -39,65 +49,73 @@ public class ThetaStar : MonoBehaviour
 
             visited.Add(node);
 
-            Debug.Log("ThetaStar");
-
             if (isSatisfied(node))
             {
-                List<Node> path = new List<Node>();
-                path.Add(node);
-                Node current = node;
-
-                while (parents.ContainsKey(current) && parents[current] != current)
-                {
-                    path.Add(parents[current]);
-                    current = parents[current];
-                }
-
-                path.Reverse();
-                return path;
+                return BuildPath(node, parents);
             }
-            else
+
+            List<Node> children = getConnections(node);
+
+            if (children == null)
             {
-                List<Node> children = getConnections(node);
+                continue;
+            }
 
-                for (int i = 0; i < children.Count; ++i)
+            for (int i = 0; i < children.Count; i++)
+            {
+                Node child = children[i];
+
+                if (child == null || visited.Contains(child))
                 {
-                    Node child = children[i];
-
-                    if (visited.Contains(child))
-                    {
-                        continue;
-                    }
-
-                    Node parent = parents[node];
-
-                    float currentCosts;
-                    Node newParent;
-
-                    if (parent != node && hasLineOfSight(parent, child))
-                    {
-                        currentCosts = costs[parent] + getCosts(parent, child);
-                        newParent = parent;
-                    }
-                    else
-                    {
-                        currentCosts = costs[node] + getCosts(node, child);
-                        newParent = node;
-                    }
-
-                    if (costs.ContainsKey(child) && currentCosts >= costs[child])
-                    {
-                        continue;
-                    }
-
-                    costs[child] = currentCosts;
-                    parents[child] = newParent;
-                    pending.Enqueue(child, currentCosts + heuristic(child));
+                    continue;
                 }
+
+                Node parent = parents[node];
+
+                float currentCost;
+                Node newParent;
+
+                if (parent != node && hasLineOfSight(parent, child))
+                {
+                    currentCost = costs[parent] + getCosts(parent, child);
+                    newParent = parent;
+                }
+                else
+                {
+                    currentCost = costs[node] + getCosts(node, child);
+                    newParent = node;
+                }
+
+                if (costs.ContainsKey(child) && currentCost >= costs[child])
+                {
+                    continue;
+                }
+
+                costs[child] = currentCost;
+                parents[child] = newParent;
+
+                float priority = currentCost + heuristic(child);
+                pending.Enqueue(child, priority);
             }
         }
 
-        return new List<Node>();
+        return emptyPath;
+    }
+
+    private static List<Node> BuildPath(Node endNode, Dictionary<Node, Node> parents)
+    {
+        List<Node> path = new List<Node>();
+        Node current = endNode;
+
+        path.Add(current);
+
+        while (parents.ContainsKey(current) && parents[current] != current)
+        {
+            current = parents[current];
+            path.Add(current);
+        }
+
+        path.Reverse();
+        return path;
     }
 }
-
