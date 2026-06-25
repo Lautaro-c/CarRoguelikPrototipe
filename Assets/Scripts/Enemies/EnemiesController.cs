@@ -34,8 +34,7 @@ public class EnemyController : MonoBehaviour
     [SerializeField] private List<Node> patrolNodes = new List<Node>();
     [SerializeField] private float patrolSpeedMultiplier = 0.5f;
     [SerializeField] private float patrolPointReachedDistance = 0.35f;
-    [SerializeField] private float nodeSearchRadius = 10f;
-    [SerializeField] private float rayHeight = 0.5f;
+    [SerializeField] private float nodeSearchRadius;
     [SerializeField] private LayerMask nodeMask;
     [SerializeField] private LayerMask obstacleMask;
     [SerializeField] private int thetaWatchDog = 1000;
@@ -48,7 +47,7 @@ public class EnemyController : MonoBehaviour
     private Rigidbody enemyRb;
 
     private float timeSinceLastAttack;
-    private Mode mode;
+    [SerializeField] private Mode mode;
     private bool isDead;
 
     private int patrolTargetIndex;
@@ -80,6 +79,7 @@ public class EnemyController : MonoBehaviour
         };
 
         timeSinceLastAttack = attackCooldown;
+        nodeSearchRadius = los.Dis;
     }
 
     private void FixedUpdate()
@@ -108,8 +108,6 @@ public class EnemyController : MonoBehaviour
                 }
 
                 break;
-
-            case Mode.Wander:
             case Mode.Patrol:
                 dir = GetPatrolDirection();
                 movementSpeed = speed * patrolSpeedMultiplier;
@@ -242,7 +240,7 @@ public class EnemyController : MonoBehaviour
             node => node.neightbourds,
             GetCost,
             node => Vector3.Distance(node.transform.position, goal.transform.position),
-            HasLineOfSight,
+            HasNodesLineOfSight,
             thetaWatchDog
         );
 
@@ -257,35 +255,46 @@ public class EnemyController : MonoBehaviour
         Node closest = null;
         float closestDistance = Mathf.Infinity;
 
-        Collider[] colliders = Physics.OverlapSphere(position, nodeSearchRadius, nodeMask);
+        float searchRadius = nodeSearchRadius;
+        float maxRadius = 200;
+        float step = nodeSearchRadius;
 
-        for (int i = 0; i < colliders.Length; i++)
+        while (closest == null && searchRadius <= maxRadius)
         {
-            Node node = colliders[i].GetComponent<Node>();
-
-            if (node == null)
+            Collider[] colliders = Physics.OverlapSphere(position, searchRadius, nodeMask);
+            for (int i = 0; i < colliders.Length; i++)
             {
-                continue;
+                Node node = colliders[i].GetComponent<Node>();
+                if (node == null)
+                {
+                    continue;
+                }
+
+                float distance = Vector3.Distance(position, node.transform.position);
+
+                if (distance >= closestDistance)
+                {
+                    continue;
+                }
+                if (!NodesCanBeSeen(position, node.transform.position, searchRadius))
+                {
+                    continue;
+                }
+
+                closestDistance = distance;
+                closest = node;
             }
 
-            float distance = Vector3.Distance(position, node.transform.position);
-
-            if (distance >= closestDistance)
+            // si no encontró nada, expandimos el radio
+            if (closest == null)
             {
-                continue;
+                searchRadius += step;
             }
-
-            if (!HasLineOfSight(position, node.transform.position))
-            {
-                continue;
-            }
-
-            closestDistance = distance;
-            closest = node;
         }
 
         return closest;
     }
+
 
     private float GetCost(Node node1, Node node2)
     {
@@ -295,30 +304,30 @@ public class EnemyController : MonoBehaviour
         return distanceCost + trapCost;
     }
 
-    private bool HasLineOfSight(Node node1, Node node2)
+    private bool HasNodesLineOfSight(Node node1, Node node2)
     {
         if (node1 == null || node2 == null)
         {
             return false;
         }
-
-        return HasLineOfSight(node1.transform.position, node2.transform.position);
+        return NodesCanBeSeen(node1.transform.position, node2.transform.position, nodeSearchRadius);
     }
 
-    private bool HasLineOfSight(Vector3 from, Vector3 to)
+    private bool NodesCanBeSeen(Vector3 from, Vector3 to, float lookingDistance)
     {
-        Vector3 startPos = from + Vector3.up * rayHeight;
-        Vector3 endPos = to + Vector3.up * rayHeight;
-
-        Vector3 direction = endPos - startPos;
+        Vector3 direction = to - from;
         float distance = direction.magnitude;
 
         if (distance <= 0.01f)
         {
             return true;
         }
+        if (distance > lookingDistance)
+        {
+            return false;
+        }
 
-        return !Physics.Raycast(startPos, direction.normalized, distance, obstacleMask);
+        return !Physics.Raycast(from, direction.normalized, distance, obstacleMask);
     }
 
     private void Move(Vector3 dir, float movementSpeed)

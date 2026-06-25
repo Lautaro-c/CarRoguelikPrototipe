@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class LineOfSight : MonoBehaviour
 {
-    [SerializeField] private int dis;
+    [SerializeField] public int Dis;
     [SerializeField] private int fleeDis;
     [SerializeField] private int attackDis;
     [SerializeField] private int angle;
@@ -28,7 +28,7 @@ public class LineOfSight : MonoBehaviour
 
     public bool isInRange(Transform self, Transform target)
     {
-        return Vector3.Distance(self.position, target.position) <= dis;
+        return Vector3.Distance(self.position, target.position) <= Dis;
     }
 
     public bool isInAngle(Transform self, Transform target)
@@ -51,12 +51,12 @@ public class LineOfSight : MonoBehaviour
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, dis);
+        Gizmos.DrawWireSphere(transform.position, Dis);
         Vector3 leftBoundary = Quaternion.AngleAxis(-angle / 2f, Vector3.up) * transform.forward;
         Vector3 rightBoundary = Quaternion.AngleAxis(angle / 2f, Vector3.up) * transform.forward;
         Gizmos.color = Color.blue;
-        Gizmos.DrawLine(transform.position, transform.position + leftBoundary * dis);
-        Gizmos.DrawLine(transform.position, transform.position + rightBoundary * dis);
+        Gizmos.DrawLine(transform.position, transform.position + leftBoundary * Dis);
+        Gizmos.DrawLine(transform.position, transform.position + rightBoundary * Dis);
     }
 }
 

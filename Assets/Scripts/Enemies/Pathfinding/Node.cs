@@ -13,5 +13,9 @@ public class Node : MonoBehaviour
     public void SetTrap(bool hasTrap)
     {
         this.hasTrap = hasTrap;
+        if (hasTrap)
+        {
+            
+        }
     }
 }
