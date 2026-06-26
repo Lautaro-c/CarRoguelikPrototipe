@@ -14,6 +14,7 @@ public class CarController : MonoBehaviour
     [SerializeField] private float Downforce = 5f; // nuevo: intensidad del downforce
     [SerializeField] private bool UseSquaredDownforce = false; // opcional: usar v^2
     private float SteerAngle = 20f;
+    private float mudSpeedReduction;
 
     // Variables
     private Vector3 MoveForce;
@@ -26,6 +27,7 @@ public class CarController : MonoBehaviour
         rb.centerOfMass = new Vector3(0f, -0.5f, 0f);
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        mudSpeedReduction = 1f;
     }
 
     void FixedUpdate()
@@ -42,7 +44,7 @@ public class CarController : MonoBehaviour
         }
 
         // 1) Acumulo la fuerza (como en tu original)
-        MoveForce += transform.forward * MoveSpeed * forwardInput * Time.fixedDeltaTime;
+        MoveForce += transform.forward * MoveSpeed * mudSpeedReduction * forwardInput * Time.fixedDeltaTime;
 
         // 2) Drag y límite sobre MoveForce
         MoveForce *= Drag;
@@ -72,5 +74,17 @@ public class CarController : MonoBehaviour
         // Debug
         Debug.DrawRay(transform.position, MoveForce.normalized * 3f, Color.red);
         Debug.DrawRay(transform.position, transform.forward * 3f, Color.blue);
+    }
+
+    public void OnMud(bool onMud)
+    {
+        if (onMud)
+        {
+            mudSpeedReduction = 0.1f;
+        }
+        else
+        {
+            mudSpeedReduction = 1f;
+        }
     }
 }

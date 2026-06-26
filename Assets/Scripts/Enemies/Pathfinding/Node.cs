@@ -8,6 +8,7 @@ public class Node : MonoBehaviour
     //Si utilizan este codigo con los raycast en el start/update/realtime son un punto menos por raycast.
     public bool hasTrap;
     [SerializeField] private float trapCost = 100f;
+    [SerializeField] private GameObject mudModel;
     public float TrapCost => hasTrap ? trapCost : 0f;
 
     public void SetTrap(bool hasTrap)
@@ -15,7 +16,7 @@ public class Node : MonoBehaviour
         this.hasTrap = hasTrap;
         if (hasTrap)
         {
-            
+            mudModel.SetActive(true);
         }
     }
 }

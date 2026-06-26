@@ -53,6 +53,7 @@ public class EnemyController : MonoBehaviour
     private int patrolTargetIndex;
     private List<Vector3> currentPath = new List<Vector3>();
     private int currentPathIndex;
+    private float mudSpeedReduction;
 
     private void Awake()
     {
@@ -62,6 +63,7 @@ public class EnemyController : MonoBehaviour
         los = GetComponent<LineOfSight>();
         decisionTree = GetComponent<DecisionTree>();
         enemyAttack = GetComponent<EnemyAttack>();
+        mudSpeedReduction = 1f;
     }
 
     private void Start()
@@ -160,7 +162,7 @@ public class EnemyController : MonoBehaviour
                 break;
         }
 
-        Move(dir, movementSpeed);
+        Move(dir, movementSpeed * mudSpeedReduction);
     }
 
     private Vector3 GetPatrolDirection()
@@ -383,6 +385,18 @@ public class EnemyController : MonoBehaviour
             {
                 OnDeath();
             }
+        }
+    }
+
+    public void OnMud(bool onMud)
+    {
+        if (onMud)
+        {
+            mudSpeedReduction = 0.1f;
+        }
+        else
+        {
+            mudSpeedReduction = 1f;
         }
     }
 }
