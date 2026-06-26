@@ -16,9 +16,11 @@ public class OfficerAttack : EnemyAttack
     }
     public override float Attack(float speed)
     {
+        transform.LookAt(player);
         Vector3 direction = (player.position - spawnPos.position).normalized;
         GameObject proj = projectilePool.GetProjectile(spawnPos.position, transform.rotation);
         proj.GetComponent<Projectile>().Init(projectilePool, damage);
+        proj.transform.LookAt(player);
         proj.GetComponent<Rigidbody>().AddForce(direction * projectileForce, ForceMode.Impulse);
         return 0f;
     }
