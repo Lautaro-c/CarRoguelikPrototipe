@@ -126,6 +126,7 @@ public class EnemyController : MonoBehaviour
 
                 if (enemyAttack != null)
                 {
+                    transform.LookAt(player); 
                     movementSpeed = enemyAttack.Attack(speed);
                 }
 
