@@ -11,7 +11,7 @@ public class EnemyController : MonoBehaviour
         Attack,
         AfterAttack,
         Flee,
-        Dead
+        Dead,
     }
 
     [Header("Referencias")]
@@ -360,11 +360,14 @@ public class EnemyController : MonoBehaviour
         }
     }
 
-    private void OnDeath()
+    public void OnDeath()
     {
         mode = Mode.Dead;
         isDead = true;
-        enemyRb.velocity = Vector3.zero;
+        if(enemyRb != null)
+        {
+            enemyRb.velocity = Vector3.zero;
+        }
 
         if (enemyAnimator != null)
         {

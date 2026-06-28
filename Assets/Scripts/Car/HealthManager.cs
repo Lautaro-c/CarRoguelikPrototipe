@@ -54,6 +54,7 @@ public class HealthManager : MonoBehaviour
     {
         IsDead = true;
         if (deathImage != null) deathImage.SetActive(true);
+        GameManager.Instance.GameFinished();
     }
 
     public float GetHealth()

@@ -9,6 +9,7 @@ public class ScenesController : MonoBehaviour
     [SerializeField] private GameObject OptionsPanel;
     [SerializeField] private GameObject AudioAndVideoPanel;
     [SerializeField] private GameObject ControllsPanel;
+    [SerializeField] private GameObject TutorialPanel;
 
     public void Play()
     {
@@ -19,6 +20,18 @@ public class ScenesController : MonoBehaviour
     {
         OptionsPanel.SetActive(true);
         MenuPanel.SetActive(false);
+    }
+
+    public void Tutorial()
+    {
+        TutorialPanel.SetActive(true);
+        MenuPanel.SetActive(false);
+    }
+
+    public void TutorialBack()
+    {
+        TutorialPanel.SetActive(false);
+        MenuPanel.SetActive(true);
     }
 
     public void AudioAndVideo()
@@ -57,7 +70,6 @@ public class ScenesController : MonoBehaviour
 
     public void backOptions()
     {
-
         MenuPanel.SetActive(true);
         OptionsPanel.SetActive(false);
     }

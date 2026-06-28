@@ -26,6 +26,7 @@ public class FinishLine : MonoBehaviour
             score = (Mathf.Max(0, (int)(1000 - timeSpend * 10)) + 1) * ((int)(health * 10) + 1);
             pointsText.text = score.ToString();
             VictoryImage.SetActive(true);
+            GameManager.Instance.GameFinished();
         }
     }
 }

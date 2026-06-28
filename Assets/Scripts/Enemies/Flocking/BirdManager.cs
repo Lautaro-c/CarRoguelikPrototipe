@@ -74,4 +74,8 @@ public class BirdManager : MonoBehaviour
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireCube(transform.position, spawnExtents * 2f);
     }
+    public void ReceiveExit(Transform exitTransform)
+    {
+        globalTarget = exitTransform;
+    }
 }
