@@ -1,28 +1,17 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
-public class EnemyController : MonoBehaviour
+public class EnemyFSMController : MonoBehaviour
 {
-    public enum Mode
-    {
-        Pursue,
-        Wander,
-        Patrol,
-        Attack,
-        AfterAttack,
-        Flee,
-        Dead,
-    }
-
     [Header("Referencias")]
     [SerializeField] private Transform player;
     [SerializeField] private Rigidbody playerRb;
-    [SerializeField] private EnemyAnimator enemyAnimator;
+
 
     [Header("Movimiento")]
     [SerializeField] private float speed;
-    [SerializeField] private float slowRadious = 5f;
-    [SerializeField] private float maxPredictionTime = 10f;
     [SerializeField] private int rotationSpeed = 50;
 
     [Header("Ataque")]
@@ -38,17 +27,17 @@ public class EnemyController : MonoBehaviour
     [SerializeField] private LayerMask nodeMask;
     [SerializeField] private LayerMask obstacleMask;
     [SerializeField] private int thetaWatchDog = 1000;
-    [SerializeField] private bool isMafia = false;
+    [SerializeField] private float explotionRadius = 10;
+    [SerializeField] private GameObject explotion;
 
-    private DecisionTree decisionTree;
-    private DecisionNode tree;
+    private FSMClasses fsm;
     private EnemyContext context;
     private LineOfSight los;
     private EnemyAttack enemyAttack;
     private Rigidbody enemyRb;
 
     private float timeSinceLastAttack;
-    [SerializeField] private Mode mode;
+    [SerializeField] private string mode;
     private bool isDead;
 
     private int patrolTargetIndex;
@@ -62,15 +51,13 @@ public class EnemyController : MonoBehaviour
 
         enemyRb = GetComponent<Rigidbody>();
         los = GetComponent<LineOfSight>();
-        decisionTree = GetComponent<DecisionTree>();
         enemyAttack = GetComponent<EnemyAttack>();
         mudSpeedReduction = 1f;
     }
 
     private void Start()
     {
-        tree = decisionTree.CreateTree();
-
+        fsm = this.GetComponent<FSMClasses>();
         player = GameManager.Instance.GetPlayerTransform();
         playerRb = GameManager.Instance.GetPlayerRB();
 
@@ -89,7 +76,8 @@ public class EnemyController : MonoBehaviour
     {
         if (timeSinceLastAttack >= attackCooldown && !isDead)
         {
-            tree.Evaluate(this, context);
+            fsm.UpdateState(context.los, this.transform, player);
+            mode = fsm.GetClassName();
         }
         else
         {
@@ -101,78 +89,22 @@ public class EnemyController : MonoBehaviour
 
         switch (mode)
         {
-            case Mode.Pursue:
-                dir = SteeringBehaviour.Pursue(transform, player, playerRb, maxPredictionTime, slowRadious);
-                movementSpeed = speed;
-
-                if (enemyAnimator != null)
-                {
-                    enemyAnimator.PlayRunningAnamiation();
-                }
-
-                break;
-            case Mode.Patrol:
+            case "Patrol":
                 dir = GetPatrolDirection();
                 movementSpeed = speed * patrolSpeedMultiplier;
 
-                if (enemyAnimator != null)
-                {
-                    enemyAnimator.PlayWalkingAnamiation();
-                }
-
                 break;
-
-            case Mode.Attack:
-                dir = SteeringBehaviour.Seek(transform, player.position);
-
-                if (enemyAttack != null)
-                {
-                    if(!isMafia)
-                    {
-                        transform.LookAt(player);
-                    } 
-                    movementSpeed = enemyAttack.Attack(speed);
-                }
-
-                if (enemyAnimator != null)
-                {
-                    enemyAnimator.PlayAttackAnamiation();
-                }
-
-                if (!canCrash)
-                {
-                    if(!isMafia)
-                    {
-                        mode = Mode.AfterAttack;
-                    }
-                    else
-                    {
-                        mode = Mode.Flee;
-                    }
-                    timeSinceLastAttack = 0f;
-                }
-
-                break;
-
-            case Mode.AfterAttack:
-                if(!isMafia)
-                {
-                    movementSpeed = 0f;
-                }
-                break;
-
-            case Mode.Flee:
+            case "Flee":
                 dir = SteeringBehaviour.Flee(transform, player.position);
                 movementSpeed = speed * 2f;
 
-                if (enemyAnimator != null)
-                {
-                    enemyAnimator.PlayRunningAnamiation();
-                }
-
                 break;
 
-            case Mode.Dead:
+            case "Explode":
+                ExplodeEnemy();
+                movementSpeed = 0f;
+                break;
+            case "Dead":
                 movementSpeed = 0f;
                 break;
         }
@@ -251,13 +183,12 @@ public class EnemyController : MonoBehaviour
             return;
         }
 
-        List<Node> nodePath = ThetaStar.Run(
+        List<Node> nodePath = AStar.Run(
             start,
             node => node == goal,
             node => node.neightbourds,
             GetCost,
             node => Vector3.Distance(node.transform.position, goal.transform.position),
-            HasNodesLineOfSight,
             thetaWatchDog
         );
 
@@ -321,15 +252,6 @@ public class EnemyController : MonoBehaviour
         return distanceCost + trapCost;
     }
 
-    private bool HasNodesLineOfSight(Node node1, Node node2)
-    {
-        if (node1 == null || node2 == null)
-        {
-            return false;
-        }
-        return NodesCanBeSeen(node1.transform.position, node2.transform.position, nodeSearchRadius);
-    }
-
     private bool NodesCanBeSeen(Vector3 from, Vector3 to, float lookingDistance)
     {
         Vector3 direction = to - from;
@@ -359,56 +281,22 @@ public class EnemyController : MonoBehaviour
         }
     }
 
-    public void SetMode(Mode newMode)
-    {
-        if (mode == newMode)
-        {
-            return;
-        }
-
-        mode = newMode;
-
-        if (mode == Mode.Patrol || mode == Mode.Wander)
-        {
-            BuildPathToCurrentPatrolNode();
-        }
-    }
-
     public void OnDeath()
     {
-        mode = Mode.Dead;
+        mode = "Dead";
         isDead = true;
-        if(enemyRb != null)
+        if (enemyRb != null)
         {
             enemyRb.velocity = Vector3.zero;
         }
-
-        if (enemyAnimator != null)
-        {
-            enemyAnimator.PlayDeathAnamiation();
-        }
+        explotion.SetActive(true);
     }
 
     private void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.CompareTag("Player"))
         {
-            if (canCrash)
-            {
-                if(!isMafia)
-                {
-                    timeSinceLastAttack = 0f;
-                    HealthManager.Instance.ReceiveDamage(damage);
-                    mode = Mode.AfterAttack;
-                }
-            }
-            else
-            {
-                if(!isMafia)
-                {
-                    OnDeath();
-                }
-            }
+            OnDeath();
         }
     }
 
@@ -421,6 +309,19 @@ public class EnemyController : MonoBehaviour
         else
         {
             mudSpeedReduction = 1f;
+        }
+    }
+
+    private void ExplodeEnemy()
+    {
+        Collider[] colliders = Physics.OverlapSphere(transform.position, explotionRadius);
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            if (colliders[i].CompareTag("Player"))
+            {
+                HealthManager.Instance.ReceiveDamage(damage);
+                OnDeath();
+            }
         }
     }
 }
